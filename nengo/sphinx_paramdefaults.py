@@ -1,7 +1,7 @@
 import inspect
 import warnings
 
-from nengo.params import Default
+from nengo.params import Default, iter_params
 
 
 class DisplayDefault(object):
@@ -16,9 +16,10 @@ def resolve_default(cls, arg, value):
     if value is not Default:
         return value
     else:
-        try:
-            return DisplayDefault(getattr(cls, arg).default)
-        except AttributeError:
+        for param in (getattr(cls, name) for name in iter_params(cls)):
+            if param.name == arg:
+                return DisplayDefault(param.default)
+        else:
             warnings.warn(
                 "Default value for argument {} of {} could not be "
                 "resolved.".format(arg, cls))
