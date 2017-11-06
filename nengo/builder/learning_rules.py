@@ -233,7 +233,7 @@ class SimVoja(Operator):
         either 0 or 1 to turn learning off or on, respectively.
     learning_rate : float
         The scalar learning rate.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes

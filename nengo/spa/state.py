@@ -16,31 +16,31 @@ class State(Module):
     ----------
     dimensions : int
         Number of dimensions for the vector.
-    subdimensions : int, optional (Default: 16)
+    subdimensions : int, optional
         Size of the individual ensembles making up the vector.
         Must divide ``dimensions`` evenly.
-    neurons_per_dimensions : int, optional (Default: 50)
+    neurons_per_dimensions : int, optional
         Number of neurons in an ensemble will be
         ``neurons_per_dimensions * subdimensions``.
-    feedback : float, optional (Default: 0.0)
+    feedback : float, optional
         Gain of feedback connection. Set to 1.0 for perfect memory,
         or 0.0 for no memory. Values in between will create a decaying memory.
-    feedback_synapse : float, optional (Default: 0.1)
+    feedback_synapse : float, optional
         The synapse on the feedback connection.
-    vocab : Vocabulary, optional (Default: None)
+    vocab : Vocabulary, optional
         The vocabulary to use to interpret the vector. If None,
         the default vocabulary for the given dimensionality is used.
-    tau : float or None, optional (Default: None)
+    tau : float or None, optional
         Effective time constant of the integrator. If None, it should
         have an infinite time constant.
-    direct : bool, optional (Default: False)
+    direct : bool, optional
         Whether or not to use direct mode for the neurons.
 
-    label : str, optional (Default: None)
+    label : str, optional
         A name for the ensemble. Used for debugging and visualization.
-    seed : int, optional (Default: None)
+    seed : int, optional
         The seed used for random number generation.
-    add_to_container : bool, optional (Default: None)
+    add_to_container : bool, optional
         Determines if this Network will be added to the current container.
         If None, will be true if currently within a Network.
     """
