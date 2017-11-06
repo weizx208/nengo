@@ -4,12 +4,20 @@ import warnings
 from nengo.params import Default
 
 
+class DisplayDefault(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return "Default<{!r}>".format(self.value)
+
+
 def resolve_default(cls, arg, value):
     if value is not Default:
         return value
     else:
         try:
-            return getattr(cls, arg).default
+            return DisplayDefault(getattr(cls, arg).default)
         except AttributeError:
             warnings.warn(
                 "Default value for argument {} of {} could not be "
