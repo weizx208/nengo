@@ -35,7 +35,7 @@ class SimBCM(Operator):
         The synaptic weight change to be applied, :math:`\Delta \omega_{ij}`.
     learning_rate : float
         The scalar learning rate, :math:`\kappa`.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
@@ -133,7 +133,7 @@ class SimOja(Operator):
         The scalar learning rate, :math:`\kappa`.
     beta : float
         The scalar forgetting rate, :math:`\beta`.
-    tag : str, optional (Default: None)
+    tag : str, optional
         A label associated with the operator, for debugging purposes.
 
     Attributes
