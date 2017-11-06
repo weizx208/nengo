@@ -28,6 +28,9 @@ Release History
   ``max_rates`` or ``intercepts``, as the latter two parameters are ignored.
   (`#1431 <https://github.com/nengo/nengo/issues/1431>`_,
   `#1433 <https://github.com/nengo/nengo/pull/1433>`_)
+- Sphinx extension ``nengo.sphinx_paramdefault`` to automatically document
+  parameter defaults.
+  (`#1377 <https://github.com/nengo/nengo/pull/1377>`_)
 
 **Changed**
 
