@@ -39,6 +39,13 @@ Release History
   (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
   `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
 
+**Fixed**
+
+- Better error message when Node output function does not match the
+  given ``size_in``/``size_out``.
+  (`#1452 <https://github.com/nengo/nengo/issues/1452>`_,
+  `#1434 <https://github.com/nengo/nengo/pull/1434>`_)
+
 2.8.0 (June 9, 2018)
 ====================
 
