@@ -19,6 +19,18 @@ Release History
    - Removed
    - Fixed
 
+
+2.9.0 (unreleased)
+==================
+
+**Deprecated**
+
+- Deprecated the ``nengo.spa`` module. Use the
+  `Nengo SPA <https://www.nengo.ai/nengo-spa/index.html>`
+  instead.
+  (`#1465 <https://github.com/nengo/nengo/pull/1465>`_)
+
+
 2.8.1 (unreleased)
 ==================
 
