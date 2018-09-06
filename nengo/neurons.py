@@ -27,6 +27,10 @@ class NeuronType(FrozenObject):
     def __repr__(self):
         return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
 
+    def _add_argrepr(self, argreprs, attr, default):
+        if getattr(self, attr) != default:
+            argreprs.append("%s=%s" % (attr, getattr(self, attr)))
+
     @property
     def _argreprs(self):
         return []
@@ -246,6 +250,12 @@ class RectifiedLinear(NeuronType):
 
         self.amplitude = amplitude
 
+    @property
+    def _argreprs(self):
+        args = []
+        self._add_argrepr(args, 'amplitude', 1)
+        return args
+
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
@@ -317,7 +327,9 @@ class Sigmoid(NeuronType):
 
     @property
     def _argreprs(self):
-        return [] if self.tau_ref == 0.0025 else ["tau_ref=%s" % self.tau_ref]
+        args = []
+        self._add_argrepr(args, 'tau_ref', 0.0025)
+        return args
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
@@ -373,10 +385,9 @@ class LIFRate(NeuronType):
     @property
     def _argreprs(self):
         args = []
-        if self.tau_rc != 0.02:
-            args.append("tau_rc=%s" % self.tau_rc)
-        if self.tau_ref != 0.002:
-            args.append("tau_ref=%s" % self.tau_ref)
+        self._add_argrepr(args, 'tau_rc', 0.02)
+        self._add_argrepr(args, 'tau_ref', 0.002)
+        self._add_argrepr(args, 'amplitude', 1)
         return args
 
     def gain_bias(self, max_rates, intercepts):
@@ -526,10 +537,8 @@ class AdaptiveLIFRate(LIFRate):
     @property
     def _argreprs(self):
         args = super(AdaptiveLIFRate, self)._argreprs
-        if self.tau_n != 1:
-            args.append("tau_n=%s" % self.tau_n)
-        if self.inc_n != 0.01:
-            args.append("inc_n=%s" % self.inc_n)
+        self._add_argrepr(args, 'tau_n', 1)
+        self._add_argrepr(args, 'inc_n', 0.01)
         return args
 
     def step_math(self, dt, J, output, adaptation):
@@ -637,14 +646,10 @@ class Izhikevich(NeuronType):
     @property
     def _argreprs(self):
         args = []
-
-        def add(attr, default):
-            if getattr(self, attr) != default:
-                args.append("%s=%s" % (attr, getattr(self, attr)))
-        add("tau_recovery", 0.02)
-        add("coupling", 0.2)
-        add("reset_voltage", -65.)
-        add("reset_recovery", 8.)
+        self._add_argrepr(args, "tau_recovery", 0.02)
+        self._add_argrepr(args, "coupling", 0.2)
+        self._add_argrepr(args, "reset_voltage", -65.)
+        self._add_argrepr(args, "reset_recovery", 8.)
         return args
 
     def rates(self, x, gain, bias):
