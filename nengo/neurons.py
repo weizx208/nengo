@@ -463,6 +463,15 @@ class LIF(LIFRate):
             tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
 
+    @property
+    def _argreprs(self):
+        args = []
+        self._add_argrepr(args, 'tau_rc', 0.02)
+        self._add_argrepr(args, 'tau_ref', 0.002)
+        self._add_argrepr(args, 'min_voltage', 0)
+        self._add_argrepr(args, 'amplitude', 1)
+        return args
+
     def step_math(self, dt, J, spiked, voltage, refractory_time):
         # reduce all refractory times by dt
         refractory_time -= dt
