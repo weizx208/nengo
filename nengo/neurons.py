@@ -545,9 +545,10 @@ class AdaptiveLIFRate(LIFRate):
 
     @property
     def _argreprs(self):
-        args = super(AdaptiveLIFRate, self)._argreprs
+        args = []
         self._add_argrepr(args, 'tau_n', 1)
         self._add_argrepr(args, 'inc_n', 0.01)
+        args.extend(super(AdaptiveLIFRate, self)._argreprs)
         return args
 
     def step_math(self, dt, J, output, adaptation):
