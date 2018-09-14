@@ -206,6 +206,12 @@ class Exponential(Distribution):
         self.shift = shift
         self.high = high
 
+    def __repr__(self):
+        args = ["scale=%s" % self.scale] + (
+            ["shift=%s" % self.shift] if self.shift != 0 else []) + (
+            ["high=%s" % self.high] if self.high != np.inf else [])
+        return "%s(%s)" % (type(self).__name__, ', '.join(args))
+
     def sample(self, n, d=None, rng=np.random):
         shape = self._sample_shape(n, d)
         x = rng.exponential(self.scale, shape) + self.shift
@@ -403,7 +409,9 @@ class SqrtBeta(Distribution):
         self.m = m
 
     def __repr__(self):
-        return "%s(n=%r, m=%r)" % (type(self).__name__, self.n, self.m)
+        args = ["n=%r" % self.n] + (
+            ["m=%s" % self.m] if self.m != 1 else [])
+        return "%s(%s)" % (type(self).__name__, ', '.join(args))
 
     def sample(self, num, d=None, rng=np.random):
         shape = self._sample_shape(num, d)

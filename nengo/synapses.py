@@ -185,8 +185,9 @@ class LinearFilter(Synapse):
         self.analog = analog
 
     def __repr__(self):
-        return "%s(%s, %s, analog=%r)" % (
-            type(self).__name__, self.num, self.den, self.analog)
+        argreprs = [str(self.num), str(self.den)] + (
+            ["analog=%r" % self.analog] if self.analog != True else [])
+        return "%s(%s)" % (type(self).__name__, ", ".join(argreprs))
 
     def combine(self, obj):
         """Combine in series with another LinearFilter."""
