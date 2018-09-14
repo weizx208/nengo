@@ -60,7 +60,7 @@ def _sample_param_basic(param, default=None, rng=None):
     if isinstance(param, nengo.params.NumberParam):
         low = param.low if param.low is not None else -1e3
         high = param.high if param.high is not None else 1e3
-        return rng.uniform(low, high)
+        return np.round(rng.uniform(low, high), decimals=2)
     if isinstance(param, nengo.params.EnumParam):
         values = list(param.values)
         if default in values:
