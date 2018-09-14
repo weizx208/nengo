@@ -27,8 +27,8 @@ class NeuronType(FrozenObject):
     def __repr__(self):
         return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
 
-    def _add_argrepr(self, argreprs, attr, default):
-        if getattr(self, attr) != default:
+    def _add_argrepr(self, argreprs, attr, default=None):
+        if default is None or getattr(self, attr) != default:
             argreprs.append("%s=%s" % (attr, getattr(self, attr)))
 
     @property
@@ -244,6 +244,8 @@ class RectifiedLinear(NeuronType):
     """
 
     probeable = ('rates',)
+
+    amplitude = NumberParam('amplitude', low=0, low_open=True)
 
     def __init__(self, amplitude=1):
         super(RectifiedLinear, self).__init__()
