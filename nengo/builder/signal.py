@@ -240,7 +240,8 @@ class Signal(object):
         """
         return Signal(self._initial_value.reshape(*shape),
                       name="%s.reshape(%s)" % (self.name, shape),
-                      base=self.base)
+                      base=self.base,
+                      offset=self.offset)
 
     def row(self):
         """Return a view on this signal with row vector shape."""
