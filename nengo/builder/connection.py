@@ -273,7 +273,7 @@ def build_connection(model, conn):
     model.add_op(op(model.sig[conn]['weights'],
                     in_signal,
                     signal,
-                    tag="%s.weights_elementwiseinc" % conn))
+                    tag="%s.apply_weights" % conn))
 
     # Add operator for filtering
     if conn.synapse is not None:
