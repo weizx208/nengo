@@ -213,3 +213,29 @@ def test_contains():
     cfg = nengo.Config(A)
     with pytest.raises(TypeError):
         A in cfg
+
+
+def test_subclass_config():
+    max_rates1 = nengo.dists.Choice([100])
+    max_rates2 = nengo.dists.Choice([200])
+
+    class MyEnsemble(nengo.Ensemble):
+        pass
+
+    with nengo.Network() as model:
+        model.config[nengo.Ensemble].max_rates = max_rates1
+        a = MyEnsemble(2, 1)
+        assert a.max_rates is max_rates1
+
+    with nengo.Network() as model:
+        model.config[MyEnsemble].max_rates = max_rates2
+        a = MyEnsemble(2, 1)
+        assert a.max_rates is max_rates2
+
+    # with nengo.Network() as net1:
+    #     net1.config[MyEnsemble].max_rates = max_rates1
+
+    #     with nengo.Network() as net2:
+    #         net2.config[nengo.Ensemble].max_rates = max_rates2
+    #         a = MyEnsemble(2, 1)
+    #         assert a.max_rates is max_rates1
