@@ -126,7 +126,7 @@ class ConjgradScipy(LeastSquaresSolver):
                     G, B[:, i], tol=self.tol, callback=callback,
                     atol=self.atol)
             except TypeError as e:
-                # no atol parameter in Scipy < 1.0
+                # no atol parameter in Scipy < 1.1.0
                 if 'atol' not in str(e):
                     raise e
                 X[:, i], infos[i] = scipy.sparse.linalg.cg(
