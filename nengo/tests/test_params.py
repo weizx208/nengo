@@ -344,6 +344,7 @@ def test_configure_all_nengo_parameters():
         nengo.learning_rules.LearningRuleTypeParam: (
             lambda attr: nengo.learning_rules.PES()),
         nengo.neurons.NeuronTypeParam: lambda attr: nengo.AdaptiveLIF(),
+        nengo.transforms.TransformParam: lambda attr: 2.0,
     }
 
     net = nengo.Network()

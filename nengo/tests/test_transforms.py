@@ -40,7 +40,7 @@ def test_convolution(dimensions, padding, channels_last, fixed_kernel,
         b = nengo.Node(size_in=np.prod(output_shape))
         conn = nengo.Connection(
             a, b, synapse=None, transform=nengo.Convolution(
-                output_channels, input_shape, kernel=w, padding=padding,
+                output_channels, input_shape, init=w, padding=padding,
                 kernel_size=(kernel_d,) if dimensions == 1 else (kernel_d,
                                                                  kernel_d),
                 strides=(1,) if dimensions == 1 else (1, 1),

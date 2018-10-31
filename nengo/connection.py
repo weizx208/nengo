@@ -13,7 +13,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionInfo, Parameter)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.transforms import Transform
+from nengo.transforms import TransformParam
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
 from nengo.utils.functions import function_name
 from nengo.utils.stdlib import checked_call
@@ -166,33 +166,6 @@ class ConnectionFunctionParam(Parameter):
                     "Cannot apply functions to passthrough nodes",
                     attr=self.name, obj=conn)
 
-        size_mid = conn.size_in if size is None else size
-        transform = conn.transform
-
-        if isinstance(transform, (np.ndarray, Transform)):
-            if isinstance(transform, np.ndarray):
-                transform_size = (
-                    transform.shape[1] if transform.ndim == 2 else
-                    conn.size_out)
-            else:
-                transform_size = transform.size_in
-
-            # check input dimensionality matches transform
-            if size_mid != transform_size:
-                if isinstance(transform, np.ndarray) and transform.ndim < 2:
-                    # we provide a different error message in this case;
-                    # the transform is not changing the dimensionality of the
-                    # signal, so the blame most likely lies with the function
-                    raise ValidationError(
-                        "function output size is incorrect; should return a "
-                        "vector of size %d" % conn.size_out, attr=self.name,
-                        obj=conn)
-
-                raise ValidationError(
-                    "%s output size (%d) not equal to transform input size "
-                    "(%d)" % (type_pre, size_mid, transform_size),
-                    attr=self.name, obj=conn)
-
     def coerce(self, conn, function):
         function = super(ConnectionFunctionParam, self).coerce(conn, function)
 
@@ -232,61 +205,6 @@ class ConnectionFunctionParam(Parameter):
         x = (conn.eval_points[0] if is_iterable(conn.eval_points)
              else np.zeros(conn.size_in))
         return (x,)
-
-
-class TransformParam(DistOrArrayParam):
-    """The transform additionally validates size_out."""
-
-    coerce_defaults = False
-
-    def __init__(self, name, default, optional=False, readonly=False):
-        super(TransformParam, self).__init__(
-            name, default, (), optional, readonly)
-
-    def coerce(self, conn, transform):
-        if isinstance(transform, Transform):
-            # note: input_size checked in function param
-            if transform.size_out != conn.size_out:
-                raise ValidationError(
-                    "Transform output size (%d) does not match connection "
-                    "output size (%d)" % (transform.size_out, conn.size_out),
-                    "transform")
-
-            # bypass `DistOrArray` checks
-            return Parameter.coerce(self, conn, transform)
-        elif is_array_like(transform):
-            # if transform is an array, figure out what the correct shape
-            # should be
-
-            transform = np.asarray(transform, dtype=np.float64)
-            if transform.ndim == 0:
-                self.shape = ()
-            elif transform.ndim == 1:
-                self.shape = ('size_out',)
-            elif transform.ndim == 2:
-                # Actually (size_out, size_mid) but Function handles size_mid
-                self.shape = ('size_out', '*')
-
-                # check for repeated dimensions in lists, as these don't work
-                # for two-dimensional transforms
-                def repeated_inds(x):
-                    return (not isinstance(x, slice) and
-                            np.unique(x).size != len(x))
-
-                if repeated_inds(conn.pre_slice):
-                    raise ValidationError(
-                        "Input object selection has repeated indices",
-                        attr=self.name, obj=conn)
-                if repeated_inds(conn.post_slice):
-                    raise ValidationError(
-                        "Output object selection has repeated indices",
-                        attr=self.name, obj=conn)
-            else:
-                raise ValidationError(
-                    "Cannot handle transforms with dimensions > 2",
-                    attr=self.name, obj=conn)
-
-        return super(TransformParam, self).coerce(conn, transform)
 
 
 class Connection(NengoObject):
@@ -439,7 +357,7 @@ class Connection(NengoObject):
         url="https://github.com/nengo/nengo/issues/632#issuecomment-71663849")
 
     _param_init_order = [
-        'pre', 'post', 'synapse', 'transform', 'eval_points', 'function_info',
+        'pre', 'post', 'synapse', 'eval_points', 'function_info', 'transform',
         'solver', 'learning_rule_type']
 
     def __init__(self, pre, post, synapse=Default, function=Default,
@@ -452,10 +370,10 @@ class Connection(NengoObject):
         self.post = post
 
         self.synapse = synapse
-        self.transform = transform
-        self.scale_eval_points = scale_eval_points
         self.eval_points = eval_points  # Must be set before function
-        self.function_info = function  # Must be set after transform
+        self.scale_eval_points = scale_eval_points
+        self.function_info = function
+        self.transform = transform  # Must be set after function
         self.solver = solver  # Must be set before learning rule
         self.learning_rule_type = learning_rule_type  # set after transform
         self.modulatory = modulatory

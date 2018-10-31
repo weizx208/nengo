@@ -39,6 +39,19 @@ Release History
   ``dt`` is now an alias for ``sample_every`` and will be removed in the future.
   (`#1368 <https://github.com/nengo/nengo/issues/1368>`_,
   `#1384 <https://github.com/nengo/nengo/pull/1384>`_)
+- Dense connection transforms (this includes all previously supported values
+  for ``Connection.transform``)  will now be represented internally as
+  ``nengo.Dense`` objects.  Arrays/scalars can still be passed as ``transform``
+  values, and they will be automatically converted to the equivalent
+  ``nengo.Dense`` object.  Retrieving the value of ``my_conn.transform`` will
+  return that ``Dense`` object; the original input array can be retrieved
+  through ``my_conn.transform.init``.
+- ``nengo.solvers.NoSolver(w, weights=True)`` now expects ``w`` to have shape
+  ``(pre.n_neurons, function_d)``, rather than
+  ``(pre.n_neurons, post.n_neurons)``.  That is, with ``NoSolver`` you are
+  always specifying the values for the decoders, and encoders/transform will
+  be applied automatically to those decoders (as with all the other solvers).
+  Note that this does not affect `NoSolver(..., weights=False)`` (the default).
 
 2.8.0 (June 9, 2018)
 ====================
