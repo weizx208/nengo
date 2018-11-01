@@ -125,8 +125,8 @@ class Dense(Transform):
     init : :class:`.Distribution` or array_like, optional
         A Distribution used to initialize the transform matrix, or a concrete
         instantiation for the matrix.  If the matrix is square we also allow a
-        scalar (equivalent to `np.eye(n) * init`) or a vector (equivalent to
-        `np.diag(init)`) to represent the matrix more compactly.
+        scalar (equivalent to ``np.eye(n) * init``) or a vector (equivalent to
+        ``np.diag(init)``) to represent the matrix more compactly.
     """
 
     shape = ShapeParam("shape", length=2, low=1)
@@ -189,7 +189,7 @@ class Convolution(Transform):
     ----------
     n_filters : int
         The number of convolutional filters to apply
-    input_shape : tuple of int or :class:`.ConvShape`
+    input_shape : tuple of int or :class:`.ChannelShape`
         Shape of the input signal to the convolution; e.g.,
         ``(height, width, channels)`` for a 2D convolution with
         ``channels_last=True``.
