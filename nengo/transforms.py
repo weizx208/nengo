@@ -121,7 +121,7 @@ class Dense(Transform):
     Parameters
     ----------
     shape : tuple of int
-        The shape of the dense matrix: `(size_out, size_in)`.
+        The shape of the dense matrix: ``(size_out, size_in)``.
     init : :class:`.Distribution` or array_like, optional
         A Distribution used to initialize the transform matrix, or a concrete
         instantiation for the matrix.  If the matrix is square we also allow a
