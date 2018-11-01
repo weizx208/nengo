@@ -556,8 +556,7 @@ def test_numbalif_benchmark(plt):
 
     data = defaultdict(list)
     for neuron_type in (NumbaLIF(), nengo.LIF()):
-        for n in np.linspace(1, 10000, 11):
-            n = int(n)
+        for n in np.linspace(1, 10000, 11, dtype=int):
             data['Neuron Type'].append(type(neuron_type).__name__)
             data['# Neurons'].append(n)
             data['Time (ms)'].append(_benchmark(neuron_type, n))
