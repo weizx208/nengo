@@ -550,6 +550,7 @@ def _benchmark(neuron_type, n, d=1, sim_time=0.5, n_trials=10):
 
 
 @pytest.mark.slow
+@pytest.mark.noassertions
 def test_numbalif_benchmark(plt):
     import seaborn as sns
     from pandas import DataFrame
