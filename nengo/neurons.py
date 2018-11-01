@@ -9,6 +9,7 @@ from numba import njit
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
+from nengo.utils.numba import clip
 from nengo.utils.neurons import settled_firingrate
 
 logger = logging.getLogger(__name__)
@@ -484,23 +485,6 @@ class LIF(LIFRate):
 
 
 @njit
-def custom_clip(x, a, b):
-    """Numba-compiled version of np.clip."""
-    # np.clip is not supported by numba
-    # https://github.com/lmcinnes/umap/issues/84
-    # note: the out option is not supported here
-    y = np.empty_like(x)
-    for i in range(len(x)):
-        if x[i] < a:
-            y[i] = a
-        elif x[i] > b:
-            y[i] = b
-        else:
-            y[i] = x[i]
-    return y
-
-
-@njit
 def _lif_step_math(dt, J, spiked, voltage, refractory_time,
                    tau_rc, tau_ref, min_voltage, amplitude):
     """Numba-compiled version of LIF.step_math."""
@@ -511,7 +495,7 @@ def _lif_step_math(dt, J, spiked, voltage, refractory_time,
     # note that refractory times that have completed midway into this
     # timestep will be given a partial timestep, and moreover these will
     # be subtracted to zero at the next timestep (or reset by a spike)
-    delta_t = custom_clip(dt - refractory_time, 0, dt)
+    delta_t = clip(dt - refractory_time, 0, dt)
 
     # update voltage using discretized lowpass filter
     # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
