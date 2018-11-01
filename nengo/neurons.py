@@ -9,7 +9,7 @@ from numba import njit
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
-from nengo.utils.numba import clip
+from nengo.utils.numba import clip as numba_clip
 from nengo.utils.neurons import settled_firingrate
 
 logger = logging.getLogger(__name__)
@@ -426,6 +426,47 @@ class LIFRate(NeuronType):
         # (nan > 0 -> error), and not pass x < -1 to log1p
 
 
+def _make_lif_step_math(custom_clip, decorator=None):
+    """Factory for creating LIF.step_math or NumbaLIF.step_math."""
+    # this wrapper is needed for Numba-performance reasons;
+    # to make a closure that contains the required function
+    # rather than passing a function pointer to the compiled
+    # function. see for details:
+    # https://numba.pydata.org/numba-doc/dev/user/faq.html#can-i-pass-a-function-as-an-argument-to-a-jitted-function
+
+    def _lif_step_math(dt, J, spiked, voltage, refractory_time,
+                       tau_rc, tau_ref, min_voltage, amplitude):
+        # reduce all refractory times by dt
+        refractory_time -= dt
+
+        # compute effective dt for each neuron, based on remaining time.
+        # note that refractory times that have completed midway into this
+        # timestep will be given a partial timestep, and moreover these will
+        # be subtracted to zero at the next timestep (or reset by a spike)
+        delta_t = custom_clip(dt - refractory_time, 0, dt)
+
+        # update voltage using discretized lowpass filter
+        # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
+        # J is constant over the interval [t, t + dt)
+        voltage -= (J - voltage) * np.expm1(-delta_t / tau_rc)
+
+        # determine which neurons spiked (set them to 1/dt, else 0)
+        spiked_mask = voltage > 1
+        spiked[:] = spiked_mask * (amplitude / dt)
+
+        # set v(0) = 1 and solve for t to compute the spike time
+        t_spike = dt + tau_rc * np.log1p(
+            -(voltage[spiked_mask] - 1) / (J[spiked_mask] - 1))
+
+        # set spiked voltages to zero, refractory times to tau_ref, and
+        # rectify negative voltages to a floor of min_voltage
+        voltage[voltage < min_voltage] = min_voltage
+        voltage[spiked_mask] = 0
+        refractory_time[spiked_mask] = tau_ref + t_spike
+
+    return _lif_step_math if decorator is None else decorator(_lif_step_math)
+
+
 class LIF(LIFRate):
     """Spiking version of the leaky integrate-and-fire (LIF) neuron model.
 
@@ -449,72 +490,17 @@ class LIF(LIFRate):
 
     min_voltage = NumberParam('min_voltage', high=0)
 
+    _static_step_math = staticmethod(_make_lif_step_math(np.clip))
+
     def __init__(self, tau_rc=0.02, tau_ref=0.002, min_voltage=0, amplitude=1):
         super(LIF, self).__init__(
             tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
 
     def step_math(self, dt, J, spiked, voltage, refractory_time):
-        # reduce all refractory times by dt
-        refractory_time -= dt
-
-        # compute effective dt for each neuron, based on remaining time.
-        # note that refractory times that have completed midway into this
-        # timestep will be given a partial timestep, and moreover these will
-        # be subtracted to zero at the next timestep (or reset by a spike)
-        delta_t = (dt - refractory_time).clip(0, dt)
-
-        # update voltage using discretized lowpass filter
-        # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
-        # J is constant over the interval [t, t + dt)
-        voltage -= (J - voltage) * np.expm1(-delta_t / self.tau_rc)
-
-        # determine which neurons spiked (set them to 1/dt, else 0)
-        spiked_mask = voltage > 1
-        spiked[:] = spiked_mask * (self.amplitude / dt)
-
-        # set v(0) = 1 and solve for t to compute the spike time
-        t_spike = dt + self.tau_rc * np.log1p(
-            -(voltage[spiked_mask] - 1) / (J[spiked_mask] - 1))
-
-        # set spiked voltages to zero, refractory times to tau_ref, and
-        # rectify negative voltages to a floor of min_voltage
-        voltage[voltage < self.min_voltage] = self.min_voltage
-        voltage[spiked_mask] = 0
-        refractory_time[spiked_mask] = self.tau_ref + t_spike
-
-
-@njit
-def _lif_step_math(dt, J, spiked, voltage, refractory_time,
-                   tau_rc, tau_ref, min_voltage, amplitude):
-    """Numba-compiled version of LIF.step_math."""
-    # reduce all refractory times by dt
-    refractory_time -= dt
-
-    # compute effective dt for each neuron, based on remaining time.
-    # note that refractory times that have completed midway into this
-    # timestep will be given a partial timestep, and moreover these will
-    # be subtracted to zero at the next timestep (or reset by a spike)
-    delta_t = clip(dt - refractory_time, 0, dt)
-
-    # update voltage using discretized lowpass filter
-    # since v(t) = v(0) + (J - v(0))*(1 - exp(-t/tau)) assuming
-    # J is constant over the interval [t, t + dt)
-    voltage -= (J - voltage) * np.expm1(-delta_t / tau_rc)
-
-    # determine which neurons spiked (set them to 1/dt, else 0)
-    spiked_mask = voltage > 1
-    spiked[:] = spiked_mask * (amplitude / dt)
-
-    # set v(0) = 1 and solve for t to compute the spike time
-    t_spike = dt + tau_rc * np.log1p(
-        -(voltage[spiked_mask] - 1) / (J[spiked_mask] - 1))
-
-    # set spiked voltages to zero, refractory times to tau_ref, and
-    # rectify negative voltages to a floor of min_voltage
-    voltage[voltage < min_voltage] = min_voltage
-    voltage[spiked_mask] = 0
-    refractory_time[spiked_mask] = tau_ref + t_spike
+        return self._static_step_math(
+            dt, J, spiked, voltage, refractory_time,
+            self.tau_rc, self.tau_ref, self.min_voltage, self.amplitude)
 
 
 class NumbaLIF(LIF):
@@ -536,10 +522,7 @@ class NumbaLIF(LIF):
         amplitude of the output spikes of the neuron.
     """
 
-    def step_math(self, dt, J, spiked, voltage, refractory_time):
-        return _lif_step_math(
-            dt, J, spiked, voltage, refractory_time,
-            self.tau_rc, self.tau_ref, self.min_voltage, self.amplitude)
+    _static_step_math = staticmethod(_make_lif_step_math(numba_clip, njit))
 
 
 class AdaptiveLIFRate(LIFRate):
