@@ -426,7 +426,7 @@ class LIFRate(NeuronType):
         # (nan > 0 -> error), and not pass x < -1 to log1p
 
 
-def _make_lif_step_math(custom_clip, decorator=None):
+def _make_lif_step_math(custom_clip):
     """Factory for creating LIF.step_math or NumbaLIF.step_math."""
     # this wrapper is needed for Numba-performance reasons;
     # to make a closure that contains the required function
@@ -464,7 +464,7 @@ def _make_lif_step_math(custom_clip, decorator=None):
         voltage[spiked_mask] = 0
         refractory_time[spiked_mask] = tau_ref + t_spike
 
-    return _lif_step_math if decorator is None else decorator(_lif_step_math)
+    return _lif_step_math
 
 
 class LIF(LIFRate):
@@ -522,7 +522,7 @@ class NumbaLIF(LIF):
         amplitude of the output spikes of the neuron.
     """
 
-    _static_step_math = staticmethod(_make_lif_step_math(numba_clip, njit))
+    _static_step_math = staticmethod(njit(_make_lif_step_math(numba_clip)))
 
 
 class AdaptiveLIFRate(LIFRate):
