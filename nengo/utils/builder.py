@@ -12,7 +12,7 @@ from nengo.exceptions import Unconvertible, ValidationError
 
 
 def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
-    """Compute the full transform for a connection.
+    """Compute the full transform matrix for a Dense connection transform.
 
     Parameters
     ----------
@@ -27,6 +27,11 @@ def full_transform(conn, slice_pre=True, slice_post=True, allow_scalars=True):
         not using slicing, since these work fine in the reference builder.
         If false, these scalars will be turned into scaled identity matrices.
     """
+
+    if not isinstance(conn.transform, nengo.Dense):
+        raise ValidationError("full_transform can only be applied to Dense "
+                              "transforms", "transform")
+
     transform = conn.transform.init
     pre_slice = (conn.pre_slice if slice_pre and conn.function is None else
                  slice(None))
