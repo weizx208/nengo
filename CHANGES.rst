@@ -52,6 +52,9 @@ Release History
   always specifying the values for the decoders, and encoders/transform will
   be applied automatically to those decoders (as with all the other solvers).
   Note that this does not affect `NoSolver(..., weights=False)`` (the default).
+- Increased minimum NumPy version to 1.11.0 (see
+  https://www.nengo.ai/nengo/getting_started.html#installing-numpy for
+  instructions on installing numpy if you need to upgrade).
 
 2.8.0 (June 9, 2018)
 ====================
