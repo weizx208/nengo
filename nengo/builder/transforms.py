@@ -27,7 +27,7 @@ def build_dense(model, transform, sig_in, decoders=None, encoders=None,
     if decoders is not None:
         weights = multiply(weights, decoders)
     if encoders is not None:
-        weights = multiply(weights.T, encoders).T
+        weights = multiply(encoders.T, weights)
 
     # Add operator for applying weights
     weight_sig = Signal(weights, name="%s.weights" % transform, readonly=True)
