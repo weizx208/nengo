@@ -239,11 +239,6 @@ def build_connection(model, conn):
             in_signal = Signal(np.zeros(conn.size_mid), name='%s.func' % conn)
             model.add_op(SimPyFunc(in_signal, conn.function, None, sliced_in))
     elif isinstance(conn.pre_obj, Ensemble):  # Normal decoded connection
-        if isinstance(conn.transform, Convolution):
-            raise NotImplementedError(
-                "Convolutional transforms on decoded connections are "
-                "not supported")
-
         eval_points, decoders, solver_info = model.build(
             conn.solver, conn, rng)
         if conn.solver.weights:
