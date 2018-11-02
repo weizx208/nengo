@@ -4,9 +4,8 @@ import nengo
 from nengo.base import FrozenObject
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.exceptions import ValidationError
-from nengo.params import (
-    Parameter, ShapeParam, IntParam, EnumParam, BoolParam, Unconfigurable)
-from nengo.utils.compat import is_array_like, is_integer
+from nengo.params import ShapeParam, IntParam, EnumParam, BoolParam
+from nengo.utils.compat import is_array_like
 
 
 class Transform(FrozenObject):
@@ -37,47 +36,6 @@ class Transform(FrozenObject):
     def size_out(self):
         """Expected size of output from transform"""
         raise NotImplementedError()
-
-
-class TransformParam(Parameter):
-    """A parameter where the value must be a Transform.
-
-    Also supports casting array_likes to Dense transforms.
-    """
-
-    coerce_defaults = False
-
-    def __init__(self, name, size_in='*', size_out='*',
-                 default=Unconfigurable, optional=False, readonly=False):
-        self.size_in = size_in
-        self.size_out = size_out
-        super(TransformParam, self).__init__(
-            name, default, optional, readonly)
-
-    def _get_size(self, instance, size):
-        return (size if is_integer(size) or size == '*' else
-                getattr(instance, size))
-
-    def coerce(self, instance, transform):
-        size_in = self._get_size(instance, self.size_in)
-        size_out = self._get_size(instance, self.size_out)
-
-        if not isinstance(transform, Transform):
-            transform = Dense((size_out, size_in), transform)
-
-        if size_in != '*' and transform.size_in != size_in:
-            raise ValidationError(
-                "Transform input size (%d) not equal to expected size (%d)"
-                % (transform.size_in, size_in),
-                attr=self.name, obj=instance)
-
-        if size_out != '*' and transform.size_out != size_out:
-            raise ValidationError(
-                "Transform output size (%d) not equal to expected size (%d)"
-                % (transform.size_out, size_out),
-                attr=self.name, obj=instance)
-
-        return super(TransformParam, self).coerce(instance, transform)
 
 
 class ChannelShapeParam(ShapeParam):
@@ -119,12 +77,10 @@ class Dense(Transform):
     def __init__(self, shape, init=1.0):
         super(Dense, self).__init__()
 
+        self.shape = shape
+
         if is_array_like(init):
             init = np.asarray(init)
-
-            # replace any unspecified shape values
-            shape = tuple(s if s != '*' else init.shape[k] if k < init.ndim
-                          else 1 for k, s in enumerate(shape))
 
             # check that the shape of init is compatible with the given shape
             # for this transform
@@ -141,11 +97,7 @@ class Dense(Transform):
                 raise ValidationError(
                     "Shape of initial value %s does not match expected "
                     "shape %s" % (init.shape, expected_shape), "init")
-        elif '*' in shape:
-            raise ValidationError(
-                "If using '*' in shape, `init` must be array-like", "init")
 
-        self.shape = shape
         self.init = init
 
     def sample(self, rng=np.random):
