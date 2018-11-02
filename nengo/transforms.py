@@ -4,8 +4,9 @@ import nengo
 from nengo.base import FrozenObject
 from nengo.dists import Distribution, DistOrArrayParam
 from nengo.exceptions import ValidationError
-from nengo.params import Parameter, ShapeParam, IntParam, EnumParam, BoolParam
-from nengo.utils.compat import is_array_like
+from nengo.params import (
+    Parameter, ShapeParam, IntParam, EnumParam, BoolParam, Unconfigurable)
+from nengo.utils.compat import is_array_like, is_integer
 
 
 class Transform(FrozenObject):
@@ -46,54 +47,37 @@ class TransformParam(Parameter):
 
     coerce_defaults = False
 
-    def __init__(self, name, default, optional=False, readonly=False):
+    def __init__(self, name, size_in='*', size_out='*',
+                 default=Unconfigurable, optional=False, readonly=False):
+        self.size_in = size_in
+        self.size_out = size_out
         super(TransformParam, self).__init__(
             name, default, optional, readonly)
 
-    def coerce(self, conn, transform):
+    def _get_size(self, instance, size):
+        return (size if is_integer(size) or size == '*' else
+                getattr(instance, size))
+
+    def coerce(self, instance, transform):
+        size_in = self._get_size(instance, self.size_in)
+        size_out = self._get_size(instance, self.size_out)
+
         if not isinstance(transform, Transform):
-            transform = Dense((conn.size_out, conn.size_mid), transform)
+            transform = Dense((size_out, size_in), transform)
 
-        if transform.size_in != conn.size_mid:
-            if isinstance(transform, Dense) and transform.ndim < 2:
-                # we provide a different error message in this case;
-                # the transform is not changing the dimensionality of the
-                # signal, so the blame most likely lies with the function
-                raise ValidationError(
-                    "function output size is incorrect; should return a "
-                    "vector of size %d" % conn.size_out, attr=self.name,
-                    obj=conn)
-
+        if size_in != '*' and transform.size_in != size_in:
             raise ValidationError(
-                "%s output size (%d) not equal to transform input size "
-                "(%d)" % (type(conn.pre_obj).__name__, conn.size_mid,
-                          transform.size_in), attr=self.name, obj=conn)
+                "Transform input size (%d) not equal to expected size (%d)"
+                % (transform.size_in, size_in),
+                attr=self.name, obj=instance)
 
-        if transform.size_out != conn.size_out:
+        if size_out != '*' and transform.size_out != size_out:
             raise ValidationError(
-                "Transform output size (%d) does not match connection "
-                "output size (%d)" % (transform.size_out, conn.size_out),
-                "transform")
+                "Transform output size (%d) not equal to expected size (%d)"
+                % (transform.size_out, size_out),
+                attr=self.name, obj=instance)
 
-        # we don't support repeated indices on 2D transforms because it makes
-        # the matrix multiplication more complicated (we'd need to expand
-        # the weight matrix for the duplicated rows/columns). it could be done
-        # if there were a demand at some point.
-        if isinstance(transform, Dense) and len(transform.init_shape) == 2:
-            def repeated_inds(x):
-                return (not isinstance(x, slice) and
-                        np.unique(x).size != len(x))
-
-            if repeated_inds(conn.pre_slice):
-                raise ValidationError(
-                    "Input object selection has repeated indices",
-                    attr=self.name, obj=conn)
-            if repeated_inds(conn.post_slice):
-                raise ValidationError(
-                    "Output object selection has repeated indices",
-                    attr=self.name, obj=conn)
-
-        return super(TransformParam, self).coerce(conn, transform)
+        return super(TransformParam, self).coerce(instance, transform)
 
 
 class ChannelShapeParam(ShapeParam):
@@ -135,10 +119,12 @@ class Dense(Transform):
     def __init__(self, shape, init=1.0):
         super(Dense, self).__init__()
 
-        self.shape = shape
-
         if is_array_like(init):
             init = np.asarray(init)
+
+            # replace any unspecified shape values
+            shape = tuple(s if s != '*' else init.shape[k] if k < init.ndim
+                          else 1 for k, s in enumerate(shape))
 
             # check that the shape of init is compatible with the given shape
             # for this transform
@@ -155,7 +141,11 @@ class Dense(Transform):
                 raise ValidationError(
                     "Shape of initial value %s does not match expected "
                     "shape %s" % (init.shape, expected_shape), "init")
+        elif '*' in shape:
+            raise ValidationError(
+                "If using '*' in shape, `init` must be array-like", "init")
 
+        self.shape = shape
         self.init = init
 
     def sample(self, rng=np.random):

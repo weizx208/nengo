@@ -13,7 +13,7 @@ from nengo.params import (Default, Unconfigurable, ObsoleteParam,
                           BoolParam, FunctionInfo, Parameter)
 from nengo.solvers import LstsqL2, SolverParam
 from nengo.synapses import Lowpass, SynapseParam
-from nengo.transforms import TransformParam
+from nengo.transforms import Dense, Transform
 from nengo.utils.compat import is_array_like, is_iterable, iteritems
 from nengo.utils.functions import function_name
 from nengo.utils.stdlib import checked_call
@@ -207,6 +207,57 @@ class ConnectionFunctionParam(Parameter):
         return (x,)
 
 
+class ConnectionTransformParam(Parameter):
+    """Connection-specific validation for transforms."""
+
+    coerce_defaults = False
+
+    def coerce(self, conn, transform):
+        if not isinstance(transform, Transform):
+            transform = Dense((conn.size_out, conn.size_mid), transform)
+
+        if transform.size_in != conn.size_mid:
+            if isinstance(transform, Dense) and transform.ndim < 2:
+                # we provide a different error message in this case;
+                # the transform is not changing the dimensionality of the
+                # signal, so the blame most likely lies with the function
+                raise ValidationError(
+                    "Function output size is incorrect; should return a "
+                    "vector of size %d" % conn.size_mid, attr=self.name,
+                    obj=conn)
+            else:
+                raise ValidationError(
+                    "Transform input size (%d) not equal to %s output size "
+                    "(%d)" % (transform.size_in, type(conn.pre_obj).__name__,
+                              conn.size_mid), attr=self.name, obj=conn)
+
+        if transform.size_out != conn.size_out:
+            raise ValidationError(
+                "Transform output size (%d) not equal to connection "
+                "output size (%d)" % (transform.size_out, conn.size_out),
+                attr=self.name, obj=conn)
+
+        # we don't support repeated indices on 2D transforms because it makes
+        # the matrix multiplication more complicated (we'd need to expand
+        # the weight matrix for the duplicated rows/columns). it could be done
+        # if there were a demand at some point.
+        if isinstance(transform, Dense) and len(transform.init_shape) == 2:
+            def repeated_inds(x):
+                return (not isinstance(x, slice) and
+                        np.unique(x).size != len(x))
+
+            if repeated_inds(conn.pre_slice):
+                raise ValidationError(
+                    "Input object selection has repeated indices",
+                    attr=self.name, obj=conn)
+            if repeated_inds(conn.post_slice):
+                raise ValidationError(
+                    "Output object selection has repeated indices",
+                    attr=self.name, obj=conn)
+
+        return super(ConnectionTransformParam, self).coerce(conn, transform)
+
+
 class Connection(NengoObject):
     """Connects two objects together.
 
@@ -340,7 +391,7 @@ class Connection(NengoObject):
     synapse = SynapseParam('synapse', default=Lowpass(tau=0.005))
     function_info = ConnectionFunctionParam(
         'function', default=None, optional=True)
-    transform = TransformParam('transform', default=np.array(1.0))
+    transform = ConnectionTransformParam('transform', default=1.0)
     solver = ConnectionSolverParam('solver', default=LstsqL2())
     learning_rule_type = ConnectionLearningRuleTypeParam(
         'learning_rule_type', default=None, optional=True)
