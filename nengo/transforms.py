@@ -80,7 +80,7 @@ class Dense(Transform):
         self.shape = shape
 
         if is_array_like(init):
-            init = np.asarray(init)
+            init = np.asarray(init, dtype=np.float64)
 
             # check that the shape of init is compatible with the given shape
             # for this transform
