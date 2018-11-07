@@ -3,6 +3,9 @@ sudo: false
 notifications:
   email:
     - tbekolay@gmail.com
+cache:
+  directories:
+  - $HOME/miniconda
 
 env:
   global:
