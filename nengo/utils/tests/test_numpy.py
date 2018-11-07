@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import numpy as np
+import pytest
 
 from nengo.utils.numpy import meshgrid_nd
 from nengo._vendor.scipy import expm
