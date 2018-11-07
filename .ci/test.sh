@@ -17,7 +17,7 @@ if [[ "$COMMAND" == "install" ]]; then
         conda install --quiet scipy
     fi
     pip install pytest
-    pip install -e .
+    pip install -e . --no-deps
 elif [[ "$COMMAND" == "run" ]]; then
     python -c "import numpy; numpy.show_config()"
     pytest nengo -v --duration 20
