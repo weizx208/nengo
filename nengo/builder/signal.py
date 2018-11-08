@@ -238,7 +238,12 @@ class Signal(object):
         Any number of integers can be passed to this method,
         describing the desired shape of the returned signal.
         """
-        return Signal(self._initial_value.reshape(*shape),
+        if len(shape) == 1:
+            shape = shape[0]  # in case a tuple is passed in
+        initial_value = self.initial_value.view()
+        initial_value.shape = shape  # raises AttributeError if cannot
+                                     # reshape without copying.
+        return Signal(initial_value,
                       name="%s.reshape(%s)" % (self.name, shape),
                       base=self.base,
                       offset=self.offset)
