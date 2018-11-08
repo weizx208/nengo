@@ -137,7 +137,7 @@ def test_signal_reshape():
     s1slice = slice(1, None), slice(None, None, 2)
     s1shape = 2, 4
     s1 = s[s1slice].reshape(s1shape)
-    assert s1.offset > 0
+    assert s1.offset == 4 * s1.dtype.itemsize
     assert np.array_equal(s1.initial_value, value[s1slice].reshape(s1shape))
 
     # check error if non-contiguous array cannot be reshaped without copy
