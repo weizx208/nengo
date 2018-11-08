@@ -85,6 +85,9 @@ script:
       .ci/test.sh run;
     fi
 
+before_cache:
+  - conda clean --all
+
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then
       .ci/coverage.sh upload;
