@@ -24,17 +24,6 @@ class NeuronType(FrozenObject):
 
     probeable = ()
 
-    def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
-
-    def _add_argrepr(self, argreprs, attr, default=None):
-        if default is None or getattr(self, attr) != default:
-            argreprs.append("%s=%s" % (attr, getattr(self, attr)))
-
-    @property
-    def _argreprs(self):
-        return []
-
     def current(self, x, gain, bias):
         """Compute current injected in each neuron given input, gain and bias.
 
@@ -224,6 +213,7 @@ class Direct(NeuronType):
         """
         raise SimulationError("Direct mode neurons shouldn't be simulated.")
 
+
 # TODO: class BasisFunctions or Population or Express;
 #       uses non-neural basis functions to emulate neuron saturation,
 #       but still simulate very fast
@@ -251,12 +241,6 @@ class RectifiedLinear(NeuronType):
         super(RectifiedLinear, self).__init__()
 
         self.amplitude = amplitude
-
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, 'amplitude', 1)
-        return args
 
     def gain_bias(self, max_rates, intercepts):
         """Determine gain and bias by shifting and scaling the lines."""
@@ -327,12 +311,6 @@ class Sigmoid(NeuronType):
         super(Sigmoid, self).__init__()
         self.tau_ref = tau_ref
 
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, 'tau_ref', 0.0025)
-        return args
-
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
         max_rates = np.array(max_rates, dtype=float, copy=False, ndmin=1)
@@ -383,14 +361,6 @@ class LIFRate(NeuronType):
         self.tau_rc = tau_rc
         self.tau_ref = tau_ref
         self.amplitude = amplitude
-
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, 'tau_rc', 0.02)
-        self._add_argrepr(args, 'tau_ref', 0.002)
-        self._add_argrepr(args, 'amplitude', 1)
-        return args
 
     def gain_bias(self, max_rates, intercepts):
         """Analytically determine gain, bias."""
@@ -465,15 +435,6 @@ class LIF(LIFRate):
             tau_rc=tau_rc, tau_ref=tau_ref, amplitude=amplitude)
         self.min_voltage = min_voltage
 
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, 'tau_rc', 0.02)
-        self._add_argrepr(args, 'tau_ref', 0.002)
-        self._add_argrepr(args, 'min_voltage', 0)
-        self._add_argrepr(args, 'amplitude', 1)
-        return args
-
     def step_math(self, dt, J, spiked, voltage, refractory_time):
         # reduce all refractory times by dt
         refractory_time -= dt
@@ -547,14 +508,6 @@ class AdaptiveLIFRate(LIFRate):
         super(AdaptiveLIFRate, self).__init__(**lif_args)
         self.tau_n = tau_n
         self.inc_n = inc_n
-
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, 'tau_n', 1)
-        self._add_argrepr(args, 'inc_n', 0.01)
-        args.extend(super(AdaptiveLIFRate, self)._argreprs)
-        return args
 
     def step_math(self, dt, J, output, adaptation):
         """Implement the AdaptiveLIFRate nonlinearity."""
@@ -663,15 +616,6 @@ class Izhikevich(NeuronType):
         self.coupling = coupling
         self.reset_voltage = reset_voltage
         self.reset_recovery = reset_recovery
-
-    @property
-    def _argreprs(self):
-        args = []
-        self._add_argrepr(args, "tau_recovery", 0.02)
-        self._add_argrepr(args, "coupling", 0.2)
-        self._add_argrepr(args, "reset_voltage", -65.)
-        self._add_argrepr(args, "reset_recovery", 8.)
-        return args
 
     def rates(self, x, gain, bias):
         """Estimates steady-state firing rate given gain and bias."""

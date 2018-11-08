@@ -6,7 +6,8 @@ import numpy as np
 from nengo.exceptions import (
     ConfigError, ObsoleteError, ReadonlyError, ValidationError)
 from nengo.utils.compat import (int_types, is_array, is_array_like, is_integer,
-                                is_number, is_string, itervalues, string_types)
+                                is_number, is_string, itervalues, string_types,
+                                getfullargspec)
 from nengo.utils.numpy import array_hash, compare
 from nengo.utils.stdlib import WeakKeyIDDictionary, checked_call
 
@@ -529,5 +530,40 @@ class FrozenObject(object):
         self.__dict__.update(state)
 
     def __repr__(self):
-        return "%s(%s)" % (type(self).__name__, ', '.join(
-            "%s=%r" % (k, getattr(self, k)) for k in sorted(self._paramdict)))
+        return "%s(%s)" % (type(self).__name__, ", ".join(self._argreprs))
+
+    @property
+    def _argreprs(self):
+        args = []
+
+        # get default values from __init__'s
+        defaults = []
+        for t in type(self).__mro__[:-1]:
+            spec = getfullargspec(t.__init__)
+            if spec.defaults is not None:
+                defaults.extend(zip(spec.args[-len(spec.defaults):],
+                                    spec.defaults))
+
+        arg_order = [x[0] for x in defaults]
+
+        # note: added in reverse order so that if there were duplicates
+        # the superclass defaults get overridden
+        defaults = dict(defaults[::-1])
+
+        # sort parameter attributes by their order in constructor
+        members = inspect.getmembers(type(self))
+        members = sorted(members, key=lambda x: (
+            arg_order.index(x[0]) if x[0] in arg_order else
+            np.iinfo(np.int32).max, x[0]))
+
+        for k, v in members:
+            if isinstance(v, Parameter):
+                if v.default is Unconfigurable:
+                    default = defaults[v.name]
+                else:
+                    default = v.default
+                val = getattr(self, k)
+                if val != default:
+                    args.append("%s=%s" % (k, val))
+
+        return args
