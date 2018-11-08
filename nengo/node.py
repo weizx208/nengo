@@ -12,21 +12,18 @@ from nengo.utils.compat import is_array_like, getfullargspec
 from nengo.utils.stdlib import checked_call
 
 
-class OutputFnArgsValidationError(ValidationError):
-    def __init__(self, output, attr, node):
+class OutputParam(Parameter):
+    def __init__(self, name, default, optional=True, readonly=False):
+        assert optional  # None has meaning (passthrough node)
+        super(OutputParam, self).__init__(name, default, optional, readonly)
+
+    def _fn_args_validation_error(self, output, attr, node):
         n_args = 2 if node.size_in > 0 else 1
         msg = ("output function '%s' is expected to accept exactly "
                "%d argument" % (output, n_args))
         msg += (' (time, as a float)' if n_args == 1 else
                 's (time, as a float and data, as a NumPy array)')
-        super(OutputFnArgsValidationError, self).__init__(
-            msg, attr=attr, obj=node)
-
-
-class OutputParam(Parameter):
-    def __init__(self, name, default, optional=True, readonly=False):
-        assert optional  # None has meaning (passthrough node)
-        super(OutputParam, self).__init__(name, default, optional, readonly)
+        return ValidationError(msg, attr=attr, obj=node)
 
     def check_ndarray(self, node, output):
         if len(output.shape) > 1:
@@ -89,7 +86,7 @@ class OutputParam(Parameter):
         args = (t, x) if node.size_in > 0 else (t,)
         result, invoked = checked_call(output, *args)
         if not invoked:
-            raise OutputFnArgsValidationError(output, self.name, node)
+            raise self._fn_args_validation_error(output, self.name, node)
         if result is not None:
             result = np.asarray(result)
             if len(result.shape) > 1:
@@ -121,7 +118,7 @@ class OutputParam(Parameter):
                 args_len = max(expected_len, args_len)
 
             if not required_len <= expected_len <= args_len:
-                raise OutputFnArgsValidationError(output, self.name, node)
+                raise self._fn_args_validation_error(output, self.name, node)
 
 
 class Node(NengoObject):
