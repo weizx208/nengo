@@ -21,6 +21,7 @@ jobs:
       env: PYTHON="2.7" STATIC="true"
     - env: PYTHON="2.7" COVERAGE="true"
     - env: PYTHON="2.7" NUMPY="1.10"
+      cache: false  # disable the cache for one build to make sure that works
     - env: PYTHON="2.7" NUMPY="1.11"
     - env: PYTHON="2.7" NUMPY="1.12"
     - env: PYTHON="2.7" NUMPY="1.13"
