@@ -241,8 +241,14 @@ class Signal(object):
         if len(shape) == 1:
             shape = shape[0]  # in case a tuple is passed in
         initial_value = self.initial_value.view()
-        initial_value.shape = shape  # raises AttributeError if cannot
-                                     # reshape without copying.
+        try:
+            # this raises AttributeError if cannot reshape without copying
+            initial_value.shape = shape
+        except AttributeError:
+            raise SignalError(
+                "Reshaping %s to %s would require the array to be copied "
+                "(because it is not contiguous), which is not supported" % (
+                    self, shape))
         return Signal(initial_value,
                       name="%s.reshape(%s)" % (self.name, shape),
                       base=self.base,

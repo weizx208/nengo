@@ -144,7 +144,7 @@ def test_signal_reshape():
     s2slice = slice(None, None, 2), slice(None, None, 2)
     s2shape = 2, 3
     s2 = s[s2slice]
-    with pytest.raises(AttributeError):
+    with pytest.raises(SignalError):
         s2.reshape(s2shape)
 
     # check that views are working properly (incrementing `s` effects views)
